@@ -1,16 +1,61 @@
-# React + Vite
+# Cine-Stream
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Cine-Stream is a movie discovery web application built with React. It uses the OMDb API to display movie information and includes search, infinite scrolling, favorites, and an AI-powered mood matcher.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Browse popular movie results
+- Search movies with debounced input
+- Infinite scrolling for additional results
+- Movie posters with lazy loading
+- Movie ratings, release years, and titles
+- Add and remove movies from Favorites
+- Favorites saved using localStorage
+- Dedicated Favorites page
+- AI Mood Matcher using Gemini
+- Mood Matcher connects AI recommendations with OMDb results
+- Responsive movie grid
+- Graceful handling of missing posters and API errors
 
-## React Compiler
+## Workflow
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Movies are fetched from the OMDb API.
+2. Movies are displayed in a responsive grid.
+3. Search requests are delayed by 500ms using debouncing.
+4. Infinite scrolling loads additional movie results when the user reaches the bottom.
+5. Favorite movies are stored in localStorage.
+6. The Mood Matcher sends the user's description to Gemini.
+7. Gemini returns a movie title.
+8. The title is searched through OMDb and the recommended movie is displayed.
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- React
+- Vite
+- JavaScript
+- CSS
+- OMDb API
+- Google Gemini API
+- Vercel
+- localStorage
+- IntersectionObserver
+
+## Project Structure
+
+```text
+cine-stream/
+├── api/
+│   └── mood.js
+├── src/
+│   ├── components/
+│   ├── context/
+│   ├── hooks/
+│   ├── pages/
+│   ├── services/
+│   ├── App.jsx
+│   ├── main.jsx
+│   └── index.css
+├── .env
+├── .gitignore
+├── package.json
+└── vite.config.js

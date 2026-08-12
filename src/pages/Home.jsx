@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import MovieGrid from "../components/MovieGrid";
 import SearchBar from "../components/SearchBar";
+import MoodMatcher from "../components/MoodMatcher";
 import useDebounce from "../hooks/useDebounce";
 import useInfiniteScroll from "../hooks/useInfiniteScroll";
-import { getLocalMovies, searchLocalMovies } from "../services/movieData";
+import { searchMovies } from "../services/omdb";
+import { getMoodMovie } from "../services/mood";
 
 function Home() {
   const [movies, setMovies] = useState([]);
@@ -17,12 +19,17 @@ function Home() {
   const sentinelRef = useRef(null);
   const debouncedQuery = useDebounce(searchQuery, 500);
 
+  const loadMovies = useCallback(async (query, moviePage = 1) => {
+    const data = await searchMovies(query, moviePage);
+    return data;
+  }, []);
+
   const loadInitialMovies = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
 
-      const data = await getLocalMovies(1);
+      const data = await loadMovies("movie", 1);
 
       setMovies(data.results);
       setPage(1);
@@ -32,11 +39,13 @@ function Home() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadMovies]);
 
   useEffect(() => {
-    loadInitialMovies();
-  }, [loadInitialMovies]);
+    if (!debouncedQuery.trim()) {
+      loadInitialMovies();
+    }
+  }, [debouncedQuery, loadInitialMovies]);
 
   const loadMoreMovies = useCallback(async () => {
     if (loadingMore || !hasMore || debouncedQuery.trim()) {
@@ -47,7 +56,7 @@ function Home() {
       setLoadingMore(true);
 
       const nextPage = page + 1;
-      const data = await getLocalMovies(nextPage);
+      const data = await loadMovies("movie", nextPage);
 
       setMovies((prevMovies) => [
         ...prevMovies,
@@ -61,45 +70,92 @@ function Home() {
     } finally {
       setLoadingMore(false);
     }
-  }, [page, loadingMore, hasMore, debouncedQuery]);
+  }, [
+    page,
+    loadingMore,
+    hasMore,
+    debouncedQuery,
+    loadMovies,
+  ]);
 
   useInfiniteScroll({
     target: sentinelRef,
     onIntersect: loadMoreMovies,
-    enabled: hasMore && !loading && !debouncedQuery.trim(),
+    enabled:
+      hasMore &&
+      !loading &&
+      !loadingMore &&
+      !debouncedQuery.trim(),
   });
 
   useEffect(() => {
-    const searchMovies = async () => {
-      const query = debouncedQuery.trim();
+    const query = debouncedQuery.trim();
 
-      if (!query) {
-        loadInitialMovies();
-        return;
-      }
+    if (!query) {
+      return;
+    }
 
+    const searchOMDb = async () => {
       try {
         setLoading(true);
         setError("");
+        setPage(1);
 
-        const results = await searchLocalMovies(query);
+        const data = await loadMovies(query, 1);
 
-        setMovies(results);
-        setHasMore(false);
+        setMovies(data.results);
+        setHasMore(data.hasMore);
       } catch (err) {
         setError("Unable to search movies. Please try again.");
+        setMovies([]);
       } finally {
         setLoading(false);
       }
     };
 
-    searchMovies();
-  }, [debouncedQuery, loadInitialMovies]);
+    searchOMDb();
+  }, [debouncedQuery, loadMovies]);
+
+  const handleMovieSuggestion = async (mood) => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const movieTitle = await getMoodMovie(mood);
+
+      const data = await searchMovies(movieTitle, 1);
+
+      if (data.results.length === 0) {
+        setMovies([]);
+        setError(
+          `We couldn't find "${movieTitle}" in the movie database.`
+        );
+        return;
+      }
+
+      setMovies(data.results.slice(0, 1));
+      setHasMore(false);
+      setPage(1);
+    } catch (err) {
+      console.error("Mood matcher error:", err);
+
+      setError(
+        "Unable to generate a movie recommendation. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <main>
-      <h1>Cine-Stream</h1>
-      <p>Discover your next movie.</p>
+      <p className="page-subtitle">
+        Discover your next movie.
+      </p>
+
+      <MoodMatcher
+        onMovieSuggestion={handleMovieSuggestion}
+      />
 
       <SearchBar
         value={searchQuery}
