@@ -40,4 +40,56 @@ Cine-Stream is a movie discovery web application built with React. It uses the O
 - localStorage
 - IntersectionObserver
 
-uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+## Sprint 12 — Real-Time Systems
+
+This project includes a real-time communication feature built with Socket.io.
+
+### Features
+
+- Real-time bidirectional messaging
+- User identification
+- Typing indicators
+- General room
+- Tech Support room
+- Room-specific message isolation
+- Connection status
+- Responsive Live Room UI
+
+### Architecture
+
+The React frontend connects to the Socket.io server running in the Data Hub backend.
+
+Backend repository:
+
+https://github.com/shreyap2052-sys/data-hub
+
+### Socket Events
+
+| Event | Purpose |
+|---|---|
+| `join-room` | Joins a user to a selected room |
+| `chat-message` | Sends and broadcasts messages |
+| `typing` | Notifies other users that someone is typing |
+| `stop-typing` | Clears the typing indicator |
+| `room-joined` | Confirms successful room joining |
+
+### Available Rooms
+
+- General
+- Tech Support
+
+Messages are isolated by room, so users only receive messages from their selected room.
+
+### Testing
+
+The real-time functionality was tested using two browser instances.
+
+Verified:
+
+- Bidirectional messaging
+- User names displayed with messages
+- Typing indicators
+- General room communication
+- Tech Support room communication
+- Room isolation
+- Socket connection/disconnection handling
