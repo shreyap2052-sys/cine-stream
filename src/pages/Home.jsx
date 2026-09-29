@@ -6,6 +6,12 @@ import useDebounce from "../hooks/useDebounce";
 import useInfiniteScroll from "../hooks/useInfiniteScroll";
 import { searchMovies } from "../services/omdb";
 import { getMoodMovie } from "../services/mood";
+import {
+  getPosts,
+  createPost,
+  createPostWithImage,
+  deletePost,
+} from "../services/dataHub";
 
 function Home() {
   const [movies, setMovies] = useState([]);
@@ -15,6 +21,15 @@ function Home() {
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [posts, setPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [postsError, setPostsError] = useState("");
+const [postFormError, setPostFormError] = useState("");
+  const [newPostTitle, setNewPostTitle] = useState("");
+  const [newPostContent, setNewPostContent] = useState("");
+  const [postSubmitting, setPostSubmitting] = useState(false);
+  const [deletingPostId, setDeletingPostId] = useState(null);
+  const [newPostImage, setNewPostImage] = useState(null);
 
   const sentinelRef = useRef(null);
   const debouncedQuery = useDebounce(searchQuery, 500);
@@ -40,6 +55,87 @@ function Home() {
       setLoading(false);
     }
   }, [loadMovies]);
+
+
+  useEffect(() => {
+  const loadPosts = async () => {
+    try {
+      setPostsLoading(true);
+      setPostsError("");
+
+      const data = await getPosts();
+
+      setPosts(data);
+    } catch (err) {
+      console.error("Data Hub error:", err);
+      setPostsError("Unable to connect to Data Hub.");
+    } finally {
+      setPostsLoading(false);
+    }
+  };
+
+  loadPosts();
+}, []);
+
+const handleCreatePost = async (event) => {
+  event.preventDefault();
+
+  const title = newPostTitle.trim();
+  const content = newPostContent.trim();
+
+  if (!title || !content) {
+    setPostFormError("Please enter both a title and content.");
+    return;
+  }
+
+  if (!newPostImage) {
+    setPostFormError("Please select an image.");
+    return;
+  }
+
+  try {
+    setPostSubmitting(true);
+    setPostsError("");
+    setPostFormError("");
+
+    const newPost = await createPostWithImage({
+      title,
+      content,
+      image: newPostImage,
+    });
+
+    setPosts((currentPosts) => [newPost, ...currentPosts]);
+
+    setNewPostTitle("");
+    setNewPostContent("");
+    setNewPostImage(null);
+  } catch (error) {
+    console.error("Create post error:", error);
+    setPostsError(error.message || "Unable to create post.");
+  } finally {
+    setPostSubmitting(false);
+  }
+};
+  
+    
+
+const handleDeletePost = async (postId) => {
+  try {
+    setDeletingPostId(postId);
+    setPostsError("");
+
+    await deletePost(postId);
+
+    setPosts((currentPosts) =>
+      currentPosts.filter((post) => post._id !== postId)
+    );
+  } catch (error) {
+    console.error("Delete post error:", error);
+    setPostsError(error.message || "Unable to delete post.");
+  } finally {
+    setDeletingPostId(null);
+  }
+};
 
   useEffect(() => {
     if (!debouncedQuery.trim()) {
@@ -156,6 +252,83 @@ function Home() {
       <MoodMatcher
         onMovieSuggestion={handleMovieSuggestion}
       />
+
+     <section className="data-hub-section">
+  <h2>Data Hub Posts</h2>
+
+  <form onSubmit={handleCreatePost} className="post-form">
+    <input
+      type="text"
+      placeholder="Post title..."
+      value={newPostTitle}
+      onChange={(event) => setNewPostTitle(event.target.value)}
+      maxLength={100}
+    />
+
+    <textarea
+      placeholder="Post content..."
+      value={newPostContent}
+      onChange={(event) => setNewPostContent(event.target.value)}
+      rows="3"
+      maxLength={500}
+    />
+
+    <input
+  type="file"
+  accept="image/*"
+  onChange={(event) => setNewPostImage(event.target.files[0] || null)}
+   />
+
+    <button type="submit" disabled={postSubmitting}>
+      {postSubmitting ? "Adding..." : "Add Post"}
+    </button>
+  </form>
+
+  {postFormError && (
+  <p className="post-form-error">{postFormError}</p>
+)}
+
+  {postsLoading && <p>Loading posts...</p>}
+
+  {postsError && <p>{postsError}</p>}
+
+  {!postsLoading && posts.length === 0 && (
+    <p>No Data Hub posts found.</p>
+  )}
+
+  {!postsLoading && posts.length > 0 && (
+    <div className="posts-list">
+      {posts.map((post) => (
+       <article key={post._id} className="post-card">
+  <div>
+    {post.imageUrl && (
+      <img
+        src={post.imageUrl}
+        alt={post.title}
+        className="post-image"
+      />
+    )}
+
+    <h3>{post.title}</h3>
+    <p>{post.content}</p>
+
+    {post.authorId && (
+      <small>By {post.authorId.name}</small>
+    )}
+  </div>
+
+  <button
+    type="button"
+    onClick={() => handleDeletePost(post._id)}
+    disabled={deletingPostId === post._id}
+  >
+    {deletingPostId === post._id ? "Deleting..." : "Delete"}
+  </button>
+</article>
+      ))}
+    </div>
+  )}
+</section>
 
       <SearchBar
         value={searchQuery}

@@ -40,22 +40,4 @@ Cine-Stream is a movie discovery web application built with React. It uses the O
 - localStorage
 - IntersectionObserver
 
-## Project Structure
-
-```text
-cine-stream/
-├── api/
-│   └── mood.js
-├── src/
-│   ├── components/
-│   ├── context/
-│   ├── hooks/
-│   ├── pages/
-│   ├── services/
-│   ├── App.jsx
-│   ├── main.jsx
-│   └── index.css
-├── .env
-├── .gitignore
-├── package.json
-└── vite.config.js
+uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
